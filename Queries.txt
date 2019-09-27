@@ -1,0 +1,183 @@
+Tayyab ILahi 	17p-6042		CS-17B
+Create database and tables...
+1) create database event_org;
+/////////////////////////////
+2)
+create table customer(
+    -> custno INT NOT NULL,
+    -> custname char(15) NOT NULL,
+    -> address char(15) NOT NULL,
+    -> internal enum('Y','N') NOT NULL,
+    -> contact char(15) NOT NULL,
+    -> phone INT NOT NULL,
+    -> city char(10) NOT NULL,
+    -> state varchar(7) NOT NULL,
+    -> zip INT NOT NULL,
+    -> PRIMARY KEY(custno)
+);
+///////////////////////////
+create table employee(
+    -> empno INT NOT NULL,
+    -> empname char(15) NOT NULL,
+    -> department char(10) NOT NULL,
+    -> email varchar(15) NOT NULL,
+    -> phone varchar(10) NOT NULL,
+    -> PRIMARY KEY(empno)
+);
+///////////////////////////////
+create table facility(
+    -> facno char(10) NOT NULL,
+    -> facname char(15) NOT NULL,
+    -> PRIMARY KEY(facno)
+);
+//////////////////////////////////
+create table location(
+    -> locno char(5) NOT NULL,
+    -> facno char(10) NOT NULL,
+    -> locname char(15) NOT NULL,
+    -> FOREIGN KEY fk_facility(facno)
+    -> references facility(facno)
+    -> ON UPDATE CASCADE
+    -> ON DELETE RESTRICT
+);
+////////////////////////////////////
+create table resourcetTbl(
+    -> resno char(10) NOT NULL,
+    -> resname char(15) NOT NULL,
+    -> rate varchar(10) NOT NULL,
+    -> PRIMARY KEY(resno)
+);
+////////////////////////////////////////////
+create table EventRequest(
+    -> eventno char(15) NOT NULL,
+    -> dateheld varchar(15) NOT NULL,
+    -> datereq varchar(15) NOT NULL,
+    -> facno char(10) NOT NULL,
+    -> custno char(15) NOT NULL,
+    -> dateauth varchar(15),
+    -> status varchar(15),
+    -> estcost char(10) NOT NULL,
+    -> estaudience int NOT NULL,
+    -> budno char(10),
+    -> PRIMARY KEY(eventno),
+    -> FOREIGN KEY(custno)
+    -> references customer(custno),
+    -> FOREIGN KEY(facno)
+    -> references facility(facno));
+
+ALTER TABLE EventRequest
+    -> ADD CHECK (estaudience > 0);
+
+ALTER TABLE EventRequest
+    -> ADD CONSTRAINT CHECK(status = 'Pending' or status = 'Approved'
+    -> or status = 'Denied');
+///////////////////////////////////////////////////////////
+Create table eventplan(
+    -> planno char(10) NOT NULL,
+    -> eventno char(15) NOT NULL,
+    -> workdate char(15) NOT NULL,
+    -> notes char(20) NOT NULL,
+    -> activity  char(10) NOT NULL,
+    -> empno char(5) NOT NULL,
+    -> PRIMARY KEY(planno),
+    -> FOREIGN KEY(eventno)
+    -> references eventrequest(eventno),
+    -> FOREIGN KEY(empno)
+    -> references employee(empno));
+///////////////////////////////////////////////////////
+create table eventPlanLine(
+    -> planno char(15) NOT NULL,
+    -> lineno int NOT NULL,
+    -> timeStart char(20) NOT NULL,
+    -> timeEnd char(20) NOT NULL,
+    -> numberFid int NOT NULL,
+    -> locno char(5) NOT NULL,
+    -> resno char(10) NOT NULL,
+    -> FOREIGN KEY(planno)
+    -> references eventplan(planno),
+    -> FOREIGN KEY(locno)
+    -> references location(locno),
+    -> FOREIGN KEY(resno)
+    -> references resourcettbl(resno));
+/////////////////////////////////////////////////////////////	
+	Alter table eventplanline
+    -> ADD CHECK (timestart < timeend);
+	
+	
+	
+	
+	
+	
+	
+////////////////////////////////////////////////////////////////
+Queries
+Part A
+//////////
+select DISTINCT city,state,zip from customer;
+//////////
+select empname,department,phone,email from employee where phone LIKE '3-%';
+//////////////
+select * from resourcetbl where rate between 10 AND 20 group by rate;
+/////////////
+select eventno,dateauth,status from eventrequest where status IN("approved","denied") AND dateauth = '2013-07';
+/////////////
+select locno,locname from location,facility where facname = "Basketball arena";
+/////////////
+
+
+
+
+//////////////
+Part B
+//////////////
+SELECT EventRequest.EventNo, DateHeld, COUNT(EventPlan.PlanNo) AS No_events
+    -> FROM eventrequest, eventplan
+    -> WHERE (eventrequest.eventNo = eventplan.eventNo)
+    ->     AND (dateheld BETWEEN '1-Dec-2013' AND '31-Dec-2013')
+    -> GROUP BY Eventrequest.eventNo, Dateheld
+    -> HAVING COUNT(Eventplan.planNo) > 1;
+//////////////////
+SELECT planNo, eventplan.eventNo, workdate, activity
+    -> FROM EventPlan, EventRequest, Facility
+    -> WHERE (eventplan.eventNo = eventrequest.eventNo)
+    ->     AND (Eventrequest.facNo = facility.facNo)
+    ->     AND (WorkDate BETWEEN '1-Dec-2013' AND '31-Dec-2013')
+    ->     AND (facname = 'Basketball arena');
+//////////////////
+SELECT eventplan.eventNo, dateheld, status, estcost
+    -> FROM eventrequest, eventplan, employee, facility
+    -> WHERE (eventPlan.eventNo = eventrequest.eventNo)
+    ->     AND (eventplan.empNo = employee.empNo)
+    ->     AND (eventrequest.facno = facility.facno)
+    ->     AND (dateheld BETWEEN '1-Oct-2013' AND '31-Dec-2013')
+    ->     AND (facname = 'Basketball arena')
+    ->     AND (empname = 'Mary Manager');
+/////////////////
+SELECT eventplanline.PlanNo, lineNo, resname, numberFld, LocName, timeStart, timeEnd
+FROM eventplanline, resourcetbl, location, facility, eventPlan
+WHERE (eventplanline.resNo = resourcetbl.resNo)
+    AND (eventplanLine.locNo = location.locNo)
+    AND (eventplanline.planNo = eventplan.planNo)
+    AND (location.facNo = facility.facNo)
+    AND (facName = 'Basketball arena')
+    AND (activity = 'Operation')
+    AND (workdate BETWEEN '1-Oct-2013' AND '31-Dec-2013');
+
+
+
+
+/////////////////
+Part C
+Modification 
+/////////////
+insert into facility(facno,facname) values('F104','Swimming Pool');
+////////////
+insert into location(locno,facno,locname) values('L107','F104','Door');
+////////////
+insert into location(locno,facno,locname) values('L108','F104','Locker Room');
+///////////
+UPDATE location set locname = 'Gate' where locno = 'L107';
+///////////
+DELETE from location where locname = 'Locker Room' AND facno = 'F104';
+//////////
+
